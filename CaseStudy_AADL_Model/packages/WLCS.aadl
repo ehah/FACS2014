@@ -1,0 +1,108 @@
+package WLCS
+public
+	device actuator
+	features
+		c : in data port;
+	end actuator;
+
+	device implementation actuator.impl
+	end actuator.impl;
+
+	device sensor
+	features
+		s : out data port;
+	end sensor;
+
+	device implementation sensor.impl
+	end sensor.impl;
+
+	process Controller
+	features
+		s : in data port;
+		c : out data port;
+	end Controller;
+
+	process implementation Controller.impl
+	subcomponents
+		get_data : thread get_data.impl;
+		com_cmd : thread com_cmd.impl;
+	connections
+		C1 : port s -> get_data.s;
+		C2 : port get_data.w -> com_cmd.e;
+		C3 : port com_cmd.c -> c;
+		
+	annex hybrid{**
+		
+		behavior
+		Control ::=  wait period & Plant2Con?wl & Con2Plant!cmd
+        Controller ::= REPEAT(Control)
+	**};	
+	end Controller.impl;
+
+	thread get_data
+	features
+		s : in data port;
+		w : out data port;
+	end get_data;
+
+	thread implementation get_data.impl
+	end get_data.impl;
+
+	thread com_cmd
+	features
+		e : in data port;
+		c : out data port;
+	end com_cmd;
+
+	thread implementation com_cmd.impl
+	end com_cmd.impl;
+
+	system WLCS_topSystem
+	end WLCS_topSystem;
+
+	system implementation WLCS_topSystem.impl
+	subcomponents
+		WLCS : process Controller.impl;
+	WaterTank : system WaterTank.impl;
+connections
+	Plant2Con : port WaterTank.s -> WLCS.s;
+	Con2Plant : port WLCS.c -> WaterTank.a;
+end WLCS_topSystem.impl;
+
+	system WaterTank
+features
+	s : out data port;
+	a : in data port;
+end WaterTank;
+
+	system implementation WaterTank.impl
+subcomponents
+	Sensor : device sensor.impl;
+	Actuator : device actuator.impl;
+connections
+	C1 : port a -> Actuator.c;
+	C2 : port Sensor.s -> s;
+	
+annex hybrid{**
+variables
+WL, Q, h, g, pi , r,u : Base_Types::Float
+cmd : Base_Types::Integer
+period : Base_Types::Time_Literal
+wl : Base_Types::Float
+
+channels
+ Con2Plant, Plant2Con : Base_Types::Float 
+ 
+behavior
+
+Plant ::= ' DT 1 h = Q - (pi * (r^2.0) * 1.414 *(g^0.5)*(h^0.5) * u) '
+                     < [h > 30] and [h < 60.0] >
+           			[[> Plant2Con!h ]]> SD & Con2Plant?cmd 
+
+WaterTank ::= REPEAT (Plant) 
+
+**};
+
+end WaterTank.impl;
+
+end WLCS;
