@@ -31,13 +31,7 @@ public
 		C2 : port get_data.w -> com_cmd.e;
 		C3 : port com_cmd.c -> c;
 		
-	annex hybrid{**
-		
-		behavior
-		Control ::=  wait period & Plant2Con?wl & Con2Plant!cmd
-        Controller ::= REPEAT(Control)
-	**};	
-	end Controller.impl;
+	
 
 	thread get_data
 	features
